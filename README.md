@@ -1,3 +1,2 @@
 # UI-Lib
-Forked from https://github.com/AlexR32/Roblox/blob/main/BracketV3.lua
-All credits go to AlexR32.
+Forked from https://github.com/AlexR32/BracketRewrite/blob/main/Library.lua
