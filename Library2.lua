@@ -1441,7 +1441,7 @@ end
 function Library:Close()
     self.open = not self.open
 
-    services.InputService.MouseIconEnabled = not self.open and self.mousestate or false
+    --services.InputService.MouseIconEnabled = not self.open and self.mousestate or false
 
     if self.holder then
         self.holder.Visible = self.open
