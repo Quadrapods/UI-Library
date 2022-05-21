@@ -2370,7 +2370,7 @@ function Library:Load(options)
         self.extension = extension
     end
 
-    local cursor =
+    --[[local cursor =
         Utility.create(
         'Triangle',
         {
@@ -2393,7 +2393,7 @@ function Library:Load(options)
                 cursor.PointC = mousepos + Vector2.new(6, 12)
             end
         end
-    )
+    )]]--
 
     local holder =
         Utility.create(
