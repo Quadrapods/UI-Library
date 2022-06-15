@@ -353,6 +353,7 @@ do
 
         local listfunc
         local scrollfunc
+        local refreshscrolling
 
         objconnections[obj] = {}
 
@@ -510,6 +511,13 @@ do
                                 end
                             end
                         end
+
+                        return docontinue
+                    end
+
+                    refreshscrolling = function()
+                        repeat
+                        until not scroll(-1)
                     end
 
                     self.InputChanged:Connect(
@@ -603,6 +611,10 @@ do
 
                     if k == "MakeScrollable" and scrollfunc then
                         return scrollfunc
+                    end
+
+                    if k == "RefreshScrolling" and refreshscrolling then
+                        return refreshscrolling
                     end
 
                     if k == "AbsoluteContentSize" then
@@ -1384,8 +1396,6 @@ local library =
         flags = {},
         open = true,
         keybind = Enum.KeyCode.RightShift,
-        mousestate = services.InputService.MouseIconEnabled,
-        cursor = nil,
         holder = nil,
         connections = {}
     },
@@ -1574,14 +1584,8 @@ end
 function library:Close()
     self.open = not self.open
 
-    services.InputService.MouseIconEnabled = not self.open and self.mousestate or false
-
     if self.holder then
         self.holder.Visible = self.open
-    end
-
-    if self.cursor then
-        self.cursor.Visible = self.open
     end
 end
 
@@ -1693,10 +1697,6 @@ function library:Unload()
 
     if self.holder then
         self.holder:Remove()
-    end
-
-    if self.cursor then
-        self.cursor:Remove()
     end
 
     if self.watermarkobject then
@@ -1868,7 +1868,18 @@ function library.createbox(box, text, callback, finishedcallback)
     )
 end
 
-function library.createdropdown(holder, content, flag, callback, default, max, scrollable, scrollingmax, islist)
+function library.createdropdown(
+    holder,
+    content,
+    flag,
+    callback,
+    default,
+    max,
+    scrollable,
+    scrollingmax,
+    islist,
+    section,
+    sectioncontent)
     local dropdown =
         utility.create(
         "Square",
@@ -2061,14 +2072,16 @@ function library.createdropdown(holder, content, flag, callback, default, max, s
                 contentframe.Size = UDim2.new(1, 0, 0, contentholder.AbsoluteContentSize + 6)
 
                 if islist then
-                    holder.Size = UDim2.new(1, 0, 0, contentholder.AbsoluteContentSize + 16)
+                    holder.Size = UDim2.new(1, 0, 0, contentholder.AbsoluteContentSize + 20)
+                    section.Size = UDim2.new(1, 0, 0, sectioncontent.AbsoluteContentSize + 28)
                 end
             end
         else
             contentframe.Size = UDim2.new(1, 0, 0, contentholder.AbsoluteContentSize + 6)
 
             if islist then
-                holder.Size = UDim2.new(1, 0, 0, contentholder.AbsoluteContentSize + 16)
+                holder.Size = UDim2.new(1, 0, 0, contentholder.AbsoluteContentSize + 20)
+                section.Size = UDim2.new(1, 0, 0, sectioncontent.AbsoluteContentSize + 28)
             end
         end
 
@@ -2280,10 +2293,20 @@ function library.createdropdown(holder, content, flag, callback, default, max, s
         count = 0
 
         for _, opt in next, optioninstances do
-            opt.button:Remove()
+            coroutine.wrap(
+                function()
+                    opt.button:Remove()
+                end
+            )()
         end
 
         table.clear(optioninstances)
+
+        createoptions(tbl)
+
+        if scrollable then
+            contentholder:RefreshScrolling()
+        end
 
         value.Text = "NONE"
         utility.changeobjecttheme(value, "Disabled Text")
@@ -2293,8 +2316,6 @@ function library.createdropdown(holder, content, flag, callback, default, max, s
         else
             chosen = nil
         end
-
-        createoptions(tbl)
 
         library.flags[flag] = chosen
         callback(chosen)
@@ -3366,32 +3387,6 @@ function library:Load(options)
     if extension then
         self.extension = extension
     end
-
-    local cursor =
-        utility.create(
-        "Triangle",
-        {
-            Thickness = 6,
-            Color = Color3.fromRGB(255, 255, 255),
-            ZIndex = 1000
-        }
-    )
-
-    self.cursor = cursor
-
-    services.InputService.MouseIconEnabled = false
-
-    utility.connect(
-        services.RunService.RenderStepped,
-        function()
-            if self.open then
-                local mousepos = services.InputService:GetMouseLocation()
-                cursor.PointA = mousepos
-                cursor.PointB = mousepos + Vector2.new(6, 12)
-                cursor.PointC = mousepos + Vector2.new(6, 12)
-            end
-        end
-    )
 
     local holder =
         utility.create(
@@ -4542,7 +4537,9 @@ function library:Load(options)
                     max,
                     scrollable,
                     scrollingmax,
-                    true
+                    true,
+                    section,
+                    sectioncontent
                 )
             end
 
